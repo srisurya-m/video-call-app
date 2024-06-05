@@ -16,7 +16,10 @@ interface SocketProviderProps {
 }
 
 export const SocketProvider = ({ children }: SocketProviderProps) => {
-  const socket = useMemo(() => io("https://video-call-app-9xa8.onrender.com"), []);
+  const socket = useMemo(() => io("https://video-call-app-9xa8.onrender.com:8000",{
+    path: '/socket.io',
+    transports: ['websocket', 'polling'],
+  }), []);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
