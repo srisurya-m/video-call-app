@@ -14,7 +14,7 @@ const Lobby = () => {
   };
 
   const handleJoinRoom = async (data : {email:string,room:string}) => {
-    const {email , room } =data
+    const {room } =data
     navigate(`/room/${room}`)
   };
 
