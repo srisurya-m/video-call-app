@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../context/SocketProvider";
 import ReactPlayer from "react-player";
-import { useNavigate } from "react-router-dom";
 import peer from "../service/peer";
 
 interface UserJoinedPayload {
@@ -30,20 +29,13 @@ interface NegoNeededFinalPayload {
 
 const Room = () => {
   const socket = useSocket();
-  const navigate = useNavigate();
   const [remoteSocketId, setRemoteSocketId] = useState("");
   const [myStream, setMyStream] = useState<MediaStream>();
   const [remoteStream, setRemoteStream] = useState<MediaStream>();
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [isCallInProgress, setIsCallInProgress] = useState(false);
-  const [isCallInitiated, setIsCallInitiated] = useState(false);
-  const [isButtonsVisible, setIsButtonsVisible] = useState(false);
 
   const handleUserJoined = ({ email, id }: UserJoinedPayload) => {
     console.log(`email ${email} joined the room`);
     setRemoteSocketId(id);
-    setIsCallInitiated(true); // Indicate that the call has been initiated
   };
 
   const handleCallUser = async () => {
@@ -66,29 +58,25 @@ const Room = () => {
     setMyStream(stream);
     const ans = await peer.getAnswer(offer);
     socket.emit("call:accepted", { to: from, ans });
-    setIsCallInProgress(true);
-    setIsButtonsVisible(true); // Show buttons when call is in progress
   };
 
-  const sendStreams = () => {
+  const sendStreams = () =>{
     for (const track of myStream!.getTracks()) {
       peer.peer?.addTrack(track, myStream!);
     }
-    setIsButtonsVisible(true); // Show buttons after sending streams
-  };
+  }
 
   const handleCallAccepted = async ({ ans }: CallAcceptedPayload) => {
     try {
       await peer.setRemoteDescription(ans);
       console.log("Call Accepted");
       sendStreams();
-      setIsCallInProgress(true);
     } catch (error) {
       console.error("Error setting local description for answer:", error);
     }
   };
 
-  const handleNegoNeededIncoming = async ({
+  const handleNegoNeededIncoming = async({
     from,
     offer,
   }: NegoNeededIncomingCallPayload) => {
@@ -113,7 +101,7 @@ const Room = () => {
       socket.off("peer:nego:needed", handleNegoNeededIncoming);
       socket.off("peer:nego:final", handleNegoNeededFinal);
     };
-  }, [socket]);
+  }, [socket, handleUserJoined, handleIncomingCall,handleCallAccepted,handleNegoNeededIncoming,handleNegoNeededFinal]);
 
   useEffect(() => {
     peer.peer?.addEventListener("track", async (ev) => {
@@ -135,83 +123,39 @@ const Room = () => {
     };
   }, [handleNegoNeeded]);
 
-  const toggleAudio = () => {
-    if (myStream) {
-      myStream.getAudioTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      setIsAudioEnabled(!isAudioEnabled);
-    }
-  };
-
-  const toggleVideo = () => {
-    if (myStream) {
-      myStream.getVideoTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      setIsVideoEnabled(!isVideoEnabled);
-    }
-  };
-
-  const endCall = () => {
-    if (myStream) {
-      myStream.getTracks().forEach((track) => track.stop());
-      setMyStream(undefined);
-    }
-    if (remoteStream) {
-      remoteStream.getTracks().forEach((track) => track.stop());
-      setRemoteStream(undefined);
-    }
-    setIsCallInProgress(false);
-    setIsButtonsVisible(false); // Hide buttons after ending the call
-    navigate("/"); // Navigate to lobby after ending the call
-  };
-
   return (
     <div>
       <h1>Room Page</h1>
       <h4>{remoteSocketId ? "Your are connected" : "No one in room"}</h4>
-      {isCallInitiated && !isCallInProgress && (
-        <button onClick={handleCallUser}>Call</button>
-      )}
-      {isCallInProgress && isButtonsVisible && (
-        <>
-          <button onClick={toggleAudio}>
-            {isAudioEnabled ? "Mute Audio" : "Unmute Audio"}
-          </button>
-          <button onClick={toggleVideo}>
-            {isVideoEnabled ? "Mute Video" : "Unmute Video"}
-          </button>
-          <button onClick={endCall}>End Call</button>
-        </>
-      )}
-      {!isCallInProgress && (
-        <button onClick={sendStreams}>Send Streams</button>
-      )}
-      {myStream && (
+      {remoteSocketId && <button onClick={handleCallUser}>Call</button>}
+      {myStream && <button onClick={sendStreams}>Send Stream</button>}
+      {
         <>
           <h3>My Stream</h3>
-          <ReactPlayer
-            playing
-            muted={!isCallInProgress || !isAudioEnabled}
-            width="200px"
-            height="200px"
-            url={myStream}
-          />
+          {myStream && (
+            <ReactPlayer
+              playing
+              muted
+              width="200px"
+              height="200px"
+              url={myStream}
+            />
+          )}
         </>
-      )}
-            {remoteStream && (
+      }
+      {
         <>
-          <h3>Remote Stream</h3>
-          <ReactPlayer
-            playing
-            muted={!isCallInProgress || !isAudioEnabled}
-            width="200px"
-            height="200px"
-            url={remoteStream}
-          />
+          <h3>remote Stream</h3>
+          {remoteStream && (
+            <ReactPlayer
+              playing
+              width="200px"
+              height="200px"
+              url={remoteStream}
+            />
+          )}
         </>
-      )}
+      }
     </div>
   );
 };
