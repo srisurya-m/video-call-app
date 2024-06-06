@@ -1,6 +1,7 @@
 import cors from "cors";
 import { config } from "dotenv";
 import express from "express";
+import { createServer } from "http";
 import { Server } from "socket.io";
 
 config({
@@ -16,11 +17,16 @@ app.get("/", (req, res) => {
   res.send("API working with /api/v1");
 });
 
-const io = new Server(8000, {
+// Create an HTTP server
+const httpServer = createServer(app);
+
+// Attach the Socket.io server to the HTTP server
+const io = new Server(httpServer, {
   cors: {
     origin: "https://video-call-app-flame.vercel.app", // Adjust this to match your client app's URL if needed
     methods: ["GET", "POST"],
   },
+  path: "/socket.io",
 });
 
 const emailToSocketIdMap = new Map();
@@ -54,6 +60,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.listen(port, () => {
+// Start the HTTP server
+httpServer.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
 });
