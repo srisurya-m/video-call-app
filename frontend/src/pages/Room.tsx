@@ -32,6 +32,8 @@ const Room = () => {
   const [remoteSocketId, setRemoteSocketId] = useState("");
   const [myStream, setMyStream] = useState<MediaStream>();
   const [remoteStream, setRemoteStream] = useState<MediaStream>();
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
 
   const handleUserJoined = ({ email, id }: UserJoinedPayload) => {
     console.log(`email ${email} joined the room`);
@@ -60,11 +62,11 @@ const Room = () => {
     socket.emit("call:accepted", { to: from, ans });
   };
 
-  const sendStreams = () =>{
+  const sendStreams = () => {
     for (const track of myStream!.getTracks()) {
       peer.peer?.addTrack(track, myStream!);
     }
-  }
+  };
 
   const handleCallAccepted = async ({ ans }: CallAcceptedPayload) => {
     try {
@@ -76,7 +78,7 @@ const Room = () => {
     }
   };
 
-  const handleNegoNeededIncoming = async({
+  const handleNegoNeededIncoming = async ({
     from,
     offer,
   }: NegoNeededIncomingCallPayload) => {
@@ -101,7 +103,7 @@ const Room = () => {
       socket.off("peer:nego:needed", handleNegoNeededIncoming);
       socket.off("peer:nego:final", handleNegoNeededFinal);
     };
-  }, [socket, handleUserJoined, handleIncomingCall,handleCallAccepted,handleNegoNeededIncoming,handleNegoNeededFinal]);
+  }, [socket]);
 
   useEffect(() => {
     peer.peer?.addEventListener("track", async (ev) => {
@@ -123,39 +125,75 @@ const Room = () => {
     };
   }, [handleNegoNeeded]);
 
+  const toggleAudio = () => {
+    if (myStream) {
+      myStream.getAudioTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setIsAudioEnabled(!isAudioEnabled);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (myStream) {
+      myStream.getVideoTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoEnabled(!isVideoEnabled);
+    }
+  };
+
+  const endCall = () => {
+    if (myStream) {
+      myStream.getTracks().forEach((track) => track.stop());
+      setMyStream(undefined);
+    }
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((track) => track.stop());
+      setRemoteStream(undefined);
+    }
+    peer.peer?.close();
+    setRemoteSocketId("");
+  };
+
   return (
     <div>
       <h1>Room Page</h1>
-      <h4>{remoteSocketId ? "Your are connected" : "No one in room"}</h4>
+      <h4>{remoteSocketId ? "You are connected" : "No one in room"}</h4>
       {remoteSocketId && <button onClick={handleCallUser}>Call</button>}
       {myStream && <button onClick={sendStreams}>Send Stream</button>}
-      {
-        <>
-          <h3>My Stream</h3>
-          {myStream && (
-            <ReactPlayer
-              playing
-              muted
-              width="200px"
-              height="200px"
-              url={myStream}
-            />
-          )}
-        </>
-      }
-      {
-        <>
-          <h3>remote Stream</h3>
-          {remoteStream && (
-            <ReactPlayer
-              playing
-              width="200px"
-              height="200px"
-              url={remoteStream}
-            />
-          )}
-        </>
-      }
+      <div>
+        <button onClick={toggleAudio}>
+          {isAudioEnabled ? "Mute Audio" : "Unmute Audio"}
+        </button>
+        <button onClick={toggleVideo}>
+          {isVideoEnabled ? "Stop Video" : "Start Video"}
+        </button>
+        <button onClick={endCall}>End Call</button>
+      </div>
+      <div>
+        <h3>My Stream</h3>
+        {myStream && (
+          <ReactPlayer
+            playing
+            muted
+            width="200px"
+            height="200px"
+            url={myStream}
+          />
+        )}
+      </div>
+      <div>
+        <h3>Remote Stream</h3>
+        {remoteStream && (
+          <ReactPlayer
+            playing
+            width="200px"
+            height="200px"
+            url={remoteStream}
+          />
+        )}
+      </div>
     </div>
   );
 };
