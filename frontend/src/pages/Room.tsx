@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSocket } from "../context/SocketProvider";
 import ReactPlayer from "react-player";
 import peer from "../service/peer";
+import { useNavigate } from "react-router-dom";
 
 interface UserJoinedPayload {
   email: string;
@@ -32,6 +33,9 @@ const Room = () => {
   const [remoteSocketId, setRemoteSocketId] = useState("");
   const [myStream, setMyStream] = useState<MediaStream>();
   const [remoteStream, setRemoteStream] = useState<MediaStream>();
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const navigate = useNavigate();
 
   const handleUserJoined = ({ email, id }: UserJoinedPayload) => {
     console.log(`email ${email} joined the room`);
@@ -123,39 +127,71 @@ const Room = () => {
     };
   }, [handleNegoNeeded]);
 
+  const endCall = () => {
+    // Close the connection
+    // Reset streams
+    setMyStream(undefined);
+    setRemoteStream(undefined);
+    // Navigate user back to home page
+    navigate("/");
+  };
+
+  const toggleVideo = () => {
+    setVideoEnabled(prev => {
+      const newState = !prev;
+      myStream?.getVideoTracks().forEach(track => {
+        track.enabled = newState;
+      });
+      return newState;
+    });
+  };
+
+  const toggleAudio = () => {
+    setAudioEnabled(prev => {
+      const newState = !prev;
+      myStream?.getAudioTracks().forEach(track => {
+        track.enabled = newState;
+      });
+      return newState;
+    });
+  };
+
   return (
     <div>
       <h1>Room Page</h1>
       <h4>{remoteSocketId ? "Your are connected" : "No one in room"}</h4>
       {remoteSocketId && <button onClick={handleCallUser}>Call</button>}
       {myStream && <button onClick={sendStreams}>Send Stream</button>}
-      {
+      {myStream && (
         <>
-          <h3>My Stream</h3>
-          {myStream && (
-            <ReactPlayer
-              playing
-              muted
-              width="200px"
-              height="200px"
-              url={myStream}
-            />
-          )}
+          <button onClick={toggleVideo}>
+            {videoEnabled ? "Turn Video Off" : "Turn Video On"}
+          </button>
+          <button onClick={toggleAudio}>
+            {audioEnabled ? "Mute Audio" : "Unmute Audio"}
+          </button>
         </>
-      }
-      {
-        <>
-          <h3>remote Stream</h3>
-          {remoteStream && (
-            <ReactPlayer
-              playing
-              width="200px"
-              height="200px"
-              url={remoteStream}
-            />
-          )}
-        </>
-      }
+      )}
+      {remoteSocketId && <button onClick={endCall}>End Call</button>}
+      <h3>My Stream</h3>
+      {myStream && (
+        <ReactPlayer
+          playing
+          muted
+          width="200px"
+          height="200px"
+          url={myStream}
+        />
+      )}
+      <h3>Remote Stream</h3>
+      {remoteStream && (
+        <ReactPlayer
+          playing
+          width="200px"
+          height="200px"
+          url={remoteStream}
+        />
+      )}
     </div>
   );
 };
