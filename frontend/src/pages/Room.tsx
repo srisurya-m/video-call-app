@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../context/SocketProvider";
 import ReactPlayer from "react-player";
+import { useNavigate } from "react-router-dom";
 import peer from "../service/peer";
 
 interface UserJoinedPayload {
@@ -29,11 +30,13 @@ interface NegoNeededFinalPayload {
 
 const Room = () => {
   const socket = useSocket();
+  const navigate = useNavigate();
   const [remoteSocketId, setRemoteSocketId] = useState("");
   const [myStream, setMyStream] = useState<MediaStream>();
   const [remoteStream, setRemoteStream] = useState<MediaStream>();
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isCallInProgress, setIsCallInProgress] = useState(false);
 
   const handleUserJoined = ({ email, id }: UserJoinedPayload) => {
     console.log(`email ${email} joined the room`);
@@ -60,6 +63,7 @@ const Room = () => {
     setMyStream(stream);
     const ans = await peer.getAnswer(offer);
     socket.emit("call:accepted", { to: from, ans });
+    setIsCallInProgress(true);
   };
 
   const sendStreams = () => {
@@ -73,6 +77,7 @@ const Room = () => {
       await peer.setRemoteDescription(ans);
       console.log("Call Accepted");
       sendStreams();
+      setIsCallInProgress(true);
     } catch (error) {
       console.error("Error setting local description for answer:", error);
     }
@@ -154,6 +159,8 @@ const Room = () => {
     }
     peer.peer?.close();
     setRemoteSocketId("");
+    setIsCallInProgress(false);
+    navigate("/lobby");
   };
 
   return (
@@ -169,7 +176,7 @@ const Room = () => {
         <button onClick={toggleVideo}>
           {isVideoEnabled ? "Stop Video" : "Start Video"}
         </button>
-        <button onClick={endCall}>End Call</button>
+        {isCallInProgress && <button onClick={endCall}>End Call</button>}
       </div>
       <div>
         <h3>My Stream</h3>
