@@ -135,7 +135,6 @@ const Room = () => {
           {myStream && (
             <ReactPlayer
               playing
-              muted
               width="200px"
               height="200px"
               url={myStream}
@@ -149,7 +148,6 @@ const Room = () => {
           {remoteStream && (
             <ReactPlayer
               playing
-              muted
               width="200px"
               height="200px"
               url={remoteStream}
