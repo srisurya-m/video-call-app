@@ -38,6 +38,7 @@ const Room = () => {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isCallInProgress, setIsCallInProgress] = useState(false);
   const [isCallInitiated, setIsCallInitiated] = useState(false);
+  const [isButtonsVisible, setIsButtonsVisible] = useState(false);
 
   const handleUserJoined = ({ email, id }: UserJoinedPayload) => {
     console.log(`email ${email} joined the room`);
@@ -66,6 +67,7 @@ const Room = () => {
     const ans = await peer.getAnswer(offer);
     socket.emit("call:accepted", { to: from, ans });
     setIsCallInProgress(true);
+    setIsButtonsVisible(true); // Show buttons when call is in progress
   };
 
   const sendStreams = () => {
@@ -80,6 +82,7 @@ const Room = () => {
       console.log("Call Accepted");
       sendStreams();
       setIsCallInProgress(true);
+      setIsButtonsVisible(true); // Show buttons when call is in progress
     } catch (error) {
       console.error("Error setting local description for answer:", error);
     }
@@ -160,6 +163,7 @@ const Room = () => {
       setRemoteStream(undefined);
     }
     setIsCallInProgress(false);
+    setIsButtonsVisible(false); // Hide buttons after ending the call
     navigate("/"); // Navigate to lobby after ending the call
   };
 
@@ -170,7 +174,7 @@ const Room = () => {
       {isCallInitiated && !isCallInProgress && (
         <button onClick={handleCallUser}>Call</button>
       )}
-      {isCallInProgress && (
+      {isCallInProgress && isButtonsVisible && (
         <>
           <button onClick={toggleAudio}>
             {isAudioEnabled ? "Mute Audio" : "Unmute Audio"}
@@ -186,7 +190,7 @@ const Room = () => {
           <h3>My Stream</h3>
           <ReactPlayer
             playing
-            muted
+            muted={!isCallInProgress || !isAudioEnabled}
             width="200px"
             height="200px"
             url={myStream}
@@ -198,6 +202,7 @@ const Room = () => {
           <h3>Remote Stream</h3>
           <ReactPlayer
             playing
+            muted={!isCallInProgress || !isAudioEnabled}
             width="200px"
             height="200px"
             url={remoteStream}
@@ -207,5 +212,7 @@ const Room = () => {
     </div>
   );
 };
+
+
 
 export default Room;
