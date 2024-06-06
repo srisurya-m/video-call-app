@@ -129,7 +129,12 @@ const Room = () => {
 
   const endCall = () => {
     // Close the connection
-    // Reset streams
+    peer.peer?.close();
+    // Stop all tracks in myStream
+    myStream?.getTracks().forEach(track => {
+      track.stop();
+    });
+    // Reset streams and peer connection
     setMyStream(undefined);
     setRemoteStream(undefined);
     // Navigate user back to home page
