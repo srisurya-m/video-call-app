@@ -37,10 +37,12 @@ const Room = () => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isCallInProgress, setIsCallInProgress] = useState(false);
+  const [isCallInitiated, setIsCallInitiated] = useState(false);
 
   const handleUserJoined = ({ email, id }: UserJoinedPayload) => {
     console.log(`email ${email} joined the room`);
     setRemoteSocketId(id);
+    setIsCallInitiated(true); // Indicate that the call has been initiated
   };
 
   const handleCallUser = async () => {
@@ -157,30 +159,31 @@ const Room = () => {
       remoteStream.getTracks().forEach((track) => track.stop());
       setRemoteStream(undefined);
     }
-    peer.peer?.close();
-    setRemoteSocketId("");
     setIsCallInProgress(false);
-    navigate("/lobby");
+    navigate("/"); // Navigate to lobby after ending the call
   };
 
   return (
     <div>
       <h1>Room Page</h1>
-      <h4>{remoteSocketId ? "You are connected" : "No one in room"}</h4>
-      {remoteSocketId && <button onClick={handleCallUser}>Call</button>}
-      {myStream && <button onClick={sendStreams}>Send Stream</button>}
-      <div>
-        <button onClick={toggleAudio}>
-          {isAudioEnabled ? "Mute Audio" : "Unmute Audio"}
-        </button>
-        <button onClick={toggleVideo}>
-          {isVideoEnabled ? "Stop Video" : "Start Video"}
-        </button>
-        {isCallInProgress && <button onClick={endCall}>End Call</button>}
-      </div>
-      <div>
-        <h3>My Stream</h3>
-        {myStream && (
+      <h4>{remoteSocketId ? "Your are connected" : "No one in room"}</h4>
+      {isCallInitiated && !isCallInProgress && (
+        <button onClick={handleCallUser}>Call</button>
+      )}
+      {isCallInProgress && (
+        <>
+          <button onClick={toggleAudio}>
+            {isAudioEnabled ? "Mute Audio" : "Unmute Audio"}
+          </button>
+          <button onClick={toggleVideo}>
+            {isVideoEnabled ? "Mute Video" : "Unmute Video"}
+          </button>
+          <button onClick={endCall}>End Call</button>
+        </>
+      )}
+      {myStream && (
+        <>
+          <h3>My Stream</h3>
           <ReactPlayer
             playing
             muted
@@ -188,19 +191,19 @@ const Room = () => {
             height="200px"
             url={myStream}
           />
-        )}
-      </div>
-      <div>
-        <h3>Remote Stream</h3>
-        {remoteStream && (
+        </>
+      )}
+      {remoteStream && (
+        <>
+          <h3>Remote Stream</h3>
           <ReactPlayer
             playing
             width="200px"
             height="200px"
             url={remoteStream}
           />
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };
