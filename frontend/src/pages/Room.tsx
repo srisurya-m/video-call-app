@@ -74,6 +74,7 @@ const Room = () => {
     for (const track of myStream!.getTracks()) {
       peer.peer?.addTrack(track, myStream!);
     }
+    setIsButtonsVisible(true); // Show buttons after sending streams
   };
 
   const handleCallAccepted = async ({ ans }: CallAcceptedPayload) => {
@@ -82,7 +83,6 @@ const Room = () => {
       console.log("Call Accepted");
       sendStreams();
       setIsCallInProgress(true);
-      setIsButtonsVisible(true); // Show buttons when call is in progress
     } catch (error) {
       console.error("Error setting local description for answer:", error);
     }
@@ -185,6 +185,9 @@ const Room = () => {
           <button onClick={endCall}>End Call</button>
         </>
       )}
+      {!isCallInProgress && (
+        <button onClick={sendStreams}>Send Streams</button>
+      )}
       {myStream && (
         <>
           <h3>My Stream</h3>
@@ -197,7 +200,7 @@ const Room = () => {
           />
         </>
       )}
-      {remoteStream && (
+            {remoteStream && (
         <>
           <h3>Remote Stream</h3>
           <ReactPlayer
@@ -212,7 +215,5 @@ const Room = () => {
     </div>
   );
 };
-
-
 
 export default Room;
