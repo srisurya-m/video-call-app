@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
 
 const io = new Server(8000, {
   cors: {
-    origin: "*", // Adjust this to match your client app's URL if needed
+    origin: "https://video-call-app-flame.vercel.app", // Adjust this to match your client app's URL if needed
     methods: ["GET", "POST"],
   },
 });
