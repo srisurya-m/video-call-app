@@ -64,11 +64,16 @@ const Room = () => {
     socket.emit("call:accepted", { to: from, ans });
   };
 
-  const sendStreams = () =>{
-    for (const track of myStream!.getTracks()) {
-      peer.peer?.addTrack(track, myStream!);
+  const sendStreams = () => {
+    if (peer.peer?.signalingState !== 'closed') {
+      for (const track of myStream!.getTracks()) {
+        peer.peer?.addTrack(track, myStream!);
+      }
+    } else {
+      console.error("Peer connection is closed. Cannot send streams.");
     }
-  }
+  };
+  
 
   const handleCallAccepted = async ({ ans }: CallAcceptedPayload) => {
     try {
